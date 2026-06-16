@@ -1,6 +1,6 @@
 # mdEditor
 
-<HUMAN MADE>
+`<HUMAN MADE>`
 
 **mdEditor** is a lightning-fast, highly-capable Markdown editor and viewer built with a pure vanilla technology stack. It combines the raw speed of a custom C-compiled statistical engine with a lightweight Python backend (`pywebview`) and a zero-dependency Native JavaScript frontend parser.
 
