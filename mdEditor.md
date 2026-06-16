@@ -4,17 +4,18 @@ A tool used to edit, view, and do more with .md files
 
 # Features
 
- - Edit .md files
- - View.md files
- - Create .md files
- - Plain Text to Auto Formatted .md
- - Formatted Text to .md
- - Word/Excel files to .md
- - Customize header, points and more.
- - Copy Foramted text to .md file
- - Gemini/Grok/OpenRouter/OpenAI/Claude API key for AI [User has to input API KEY]
+ - Edit .md files __DONE__
+ - View.md files __DONE__
+ - Create .md files __DONE__
+ - Render perfection and more .md styling __DONE__
+ - Plain Text to Auto Formatted .md __DONE__
+ - Formatted Text to .md __DONE__
+ - Word/Excel/Text files to .md __DONE__
+ - Image import __DONE__
+ - HTML included __DONE__
+ - Copy Foramted text to .md file __DONE__
+ - Gemini/Grok/OpenRouter/OpenAI/Claude API key for AI [User has to input API KEY] (Requires Internet) [Stored Securly]
  - Password/Biometric Lock
- - HTML included
  - PDF with Custom CSS
  - Jupyter Notebook (.ipynb) Import/Export
  - LaTex / MathJax Support

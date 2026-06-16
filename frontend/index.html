@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mdEditor</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="toolbar">
+        <div class="logo">mdEditor</div>
+        <div class="file-ops">
+            <button id="btn-new">New File</button>
+            <button id="btn-open">Open File</button>
+            <button id="btn-import">Import File</button>
+            <button id="btn-save">Save File</button>
+            <span id="current-file">Untitled.md</span>
+        </div>
+        <div class="zoom-ops">
+            <button id="btn-zoom-out" title="Decrease Document Font Size">-</button>
+            <span id="zoom-label">16px</span>
+            <button id="btn-zoom-in" title="Increase Document Font Size">+</button>
+        </div>
+        <div class="stats">
+            <span id="stat-words">0 words</span> | 
+            <span id="stat-chars">0 chars</span> | 
+            <span id="stat-lines">1 lines</span>
+        </div>
+    </div>
+    <div class="format-toolbar">
+        <select id="sel-text-size" class="fmt-select" title="Selected Text Size">
+            <option value="">Text Size</option>
+            <option value="12px">Small</option>
+            <option value="16px">Normal</option>
+            <option value="20px">Large</option>
+            <option value="24px">Huge</option>
+        </select>
+        <span class="fmt-sep">|</span>
+        <button class="fmt-btn" data-fmt="bold" title="Bold"><b>B</b></button>
+        <button class="fmt-btn" data-fmt="italic" title="Italic"><i>I</i></button>
+        <button class="fmt-btn" data-fmt="underline" title="Underline"><u>U</u></button>
+        <button class="fmt-btn" data-fmt="strikethrough" title="Strikethrough"><del>S</del></button>
+        <span class="fmt-sep">|</span>
+        <button class="fmt-btn" data-fmt="h1" title="Heading 1">H1</button>
+        <button class="fmt-btn" data-fmt="h2" title="Heading 2">H2</button>
+        <button class="fmt-btn" data-fmt="h3" title="Heading 3">H3</button>
+        <span class="fmt-sep">|</span>
+        <button class="fmt-btn" data-fmt="quote" title="Blockquote">”</button>
+        <button class="fmt-btn" data-fmt="code" title="Code">&lt;/&gt;</button>
+        <button class="fmt-btn" data-fmt="link" title="Link">🔗</button>
+        <span class="fmt-sep">|</span>
+        <button class="fmt-btn" data-fmt="list-ul" title="Unordered List">• List</button>
+        <button class="fmt-btn" data-fmt="list-ol" title="Ordered List">1. List</button>
+        <button class="fmt-btn" data-fmt="table" title="Table">Table</button>
+    </div>
+    <div class="editor-container">
+        <div class="pane editor-pane">
+            <textarea id="editor" placeholder="Type Markdown here..."></textarea>
+        </div>
+        <div class="pane preview-pane" id="preview">
+            <!-- Rendered HTML will appear here -->
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
