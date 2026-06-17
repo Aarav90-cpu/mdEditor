@@ -1,6 +1,6 @@
 # mdEditor
 
-A tool used to edit, view, and do more with .md files
+A tool used to edit, view, and do more with .md files. For LINUX ONLY RIGHT NOW
 
 # Features
 
@@ -14,8 +14,11 @@ A tool used to edit, view, and do more with .md files
  - Image import __DONE__
  - HTML included __DONE__
  - Copy Foramted text to .md file __DONE__
- - Gemini/Grok/OpenRouter/OpenAI/Claude API key for AI [User has to input API KEY] (Requires Internet) [Stored Securly]
- - Password/Biometric Lock
+ - Gemini/Grok/OpenRouter/OpenAI/Claude API key for AI [User has to input API KEY] (Requires Internet) [Stored Securly] __DONE__
+ - Password Lock __DONE__
+
+{FIX UI AND MANGEMENT} CHECKPOINT REACHED PHASE 1 FULL COMPLETED
+
  - PDF with Custom CSS
  - Jupyter Notebook (.ipynb) Import/Export
  - LaTex / MathJax Support
@@ -28,6 +31,9 @@ A tool used to edit, view, and do more with .md files
  - Version History & Auto-Save
  - One-Click Publishing (Requires Sign IN [NOT FORCEFUL])
  - Cloud Storage Sync (Requires Sign-In [NOT FORCEFUL])
+
+{FIX UI AND MANGEMENT} CHECKPOINT
+
  - Smart Markdown Linting (AI) [Requires Internet and API Key Integrated]
  - Context-Aware Chat Sidebar (AI) [Requires Internet and API Key Integrated]
  - Mermaid.js Diagramming
@@ -40,6 +46,9 @@ A tool used to edit, view, and do more with .md files
  - No-Log Local Mode
  - Uses C,Python,arkcode,HTML,JS,CSS to provide better UI with speed and security!
  - Blazing Fast Large File Streaming
+
+{FIX UI AND MANGEMENT} CHECKPOINT
+
  - Pandoc Engine Integration
  - Local Python Script Plugin System
  - Interactive Kanban Board View
@@ -52,10 +61,15 @@ A tool used to edit, view, and do more with .md files
  - Excalidraw / Sketching Integration
  - Zero-Knowledge File Encryption (AES-256)
  - Screen Reader & WCAG Accessibility Mode
+
+{FIX UI AND MANGEMENT} CHECKPOINT
+
  - Right-to-Left (RTL) Language Support
  - Cross-Platform Native Bundlers (Windows, macOS, Linux)
  - Granular Media Optimization
  - Real-Time Multipeople Collaboration
  - Crash-Resilient Sandbox Execution
  - Completely Offline except few features
- - Opensource
+ - Cross-Platform Native Bundlers (Windows, macOS, Linux)
+
+{FIX UI AND MANGEMENT} CHECKPOINT

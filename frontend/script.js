@@ -1,3 +1,15 @@
+window.addEventListener('error', function(e) {
+    const err = document.createElement('div');
+    err.style.cssText = 'position:fixed;top:0;left:0;background:red;color:white;z-index:9999;padding:10px;font-size:12px;';
+    err.innerText = e.message + ' at ' + e.filename + ':' + e.lineno;
+    document.body.appendChild(err);
+});
+window.addEventListener('unhandledrejection', function(e) {
+    const err = document.createElement('div');
+    err.style.cssText = 'position:fixed;top:40px;left:0;background:orange;color:black;z-index:9999;padding:10px;font-size:12px;';
+    err.innerText = "Promise rejection: " + e.reason;
+    document.body.appendChild(err);
+});
 function escapeHtml(unsafe) {
     return unsafe
          .replace(/&/g, "&amp;")
@@ -242,10 +254,84 @@ const statLines = document.getElementById('stat-lines');
 const currentFile = document.getElementById('current-file');
 
 let currentFilePath = null;
+let lastSavedContent = '';
+let isDirty = false;
+
+const unsavedDialog = document.getElementById('unsaved-dialog');
+const btnUnsavedCancel = document.getElementById('btn-unsaved-cancel');
+const btnUnsavedDiscard = document.getElementById('btn-unsaved-discard');
+const btnUnsavedSave = document.getElementById('btn-unsaved-save');
+
+let pendingAction = null;
+
+function handleUnsaved(action) {
+    if (editor.value !== lastSavedContent && editor.value.trim() !== '') {
+        pendingAction = action;
+        unsavedDialog.show();
+        return true;
+    }
+    return false;
+}
+
+if (btnUnsavedCancel) {
+    btnUnsavedCancel.addEventListener('click', () => {
+        unsavedDialog.close();
+        pendingAction = null;
+    });
+}
+
+if (btnUnsavedDiscard) {
+    btnUnsavedDiscard.addEventListener('click', () => {
+        unsavedDialog.close();
+        if (pendingAction) pendingAction();
+        pendingAction = null;
+    });
+}
+
+if (btnUnsavedSave) {
+    btnUnsavedSave.addEventListener('click', async () => {
+        unsavedDialog.close();
+        if (window.pywebview && window.pywebview.api) {
+            const result = await window.pywebview.api.save_file(editor.value, currentFilePath);
+            if (result) {
+                currentFilePath = result.path;
+                currentFile.innerText = result.filename;
+                lastSavedContent = editor.value;
+                if (pendingAction) pendingAction();
+            }
+        } else {
+            alert("PyWebView API not available.");
+        }
+        pendingAction = null;
+    });
+}
 
 editor.addEventListener('input', () => {
     const text = editor.value;
     preview.innerHTML = parseMarkdown(text);
+    
+    // Asynchronously load local images for preview
+    const images = preview.querySelectorAll('img');
+    images.forEach(img => {
+        const src = img.getAttribute('src');
+        if (src && src.startsWith('/')) {
+            if (window.pywebview && window.pywebview.api) {
+                window.pywebview.api.get_image_base64(src).then(b64 => {
+                    if (b64) {
+                        img.src = b64;
+                    }
+                });
+            }
+        }
+    });
+
+    const currentlyDirty = (editor.value !== lastSavedContent && editor.value.trim() !== '');
+    if (currentlyDirty !== isDirty) {
+        isDirty = currentlyDirty;
+        if (window.pywebview && window.pywebview.api) {
+            window.pywebview.api.set_dirty(isDirty);
+        }
+    }
     
     if (window.pywebview && window.pywebview.api) {
         window.pywebview.api.get_stats(text).then(stats => {
@@ -262,40 +348,69 @@ editor.addEventListener('input', () => {
 });
 
 document.getElementById('btn-new').addEventListener('click', () => {
-    editor.value = '';
-    currentFilePath = null;
-    currentFile.innerText = 'Untitled.md';
-    editor.dispatchEvent(new Event('input'));
+    const action = () => {
+        editor.value = '';
+        currentFilePath = null;
+        currentFile.innerText = 'Untitled.md';
+        lastSavedContent = '';
+        editor.dispatchEvent(new Event('input'));
+    };
+    if (!handleUnsaved(action)) {
+        action();
+    }
 });
 
 document.getElementById('btn-open').addEventListener('click', async () => {
     if (window.pywebview && window.pywebview.api) {
         const result = await window.pywebview.api.open_file();
         if (result) {
-            editor.value = result.content;
-            currentFilePath = result.path;
-            currentFile.innerText = result.filename;
-            editor.dispatchEvent(new Event('input'));
-        }
-    } else {
-        alert("PyWebView API not available.");
-    }
-});
-
-document.getElementById('btn-import').addEventListener('click', async () => {
-    if (window.pywebview && window.pywebview.api) {
-        const result = await window.pywebview.api.import_file();
-        if (result) {
             if (result.type === 'image') {
                 const imgMd = `\n![Image](${result.path})\n`;
                 editor.setRangeText(imgMd, editor.selectionStart, editor.selectionEnd, 'end');
                 editor.dispatchEvent(new Event('input'));
                 editor.focus();
+            } else if (result.type === 'encrypted') {
+                showPasswordDialog('Unlock File', 'This file is encrypted. Enter password:', async (pwd) => {
+                    if (pwd) {
+                        const decryptResult = await window.pywebview.api.decrypt_content(pwd, result.salt, result.ciphertext);
+                        if (decryptResult.success) {
+                            isFileLocked = true;
+                            sessionPassword = pwd;
+                            document.querySelector('#btn-lock md-icon').innerText = 'lock';
+                            const action = () => {
+                                editor.value = decryptResult.content;
+                                currentFilePath = result.path;
+                                currentFile.innerText = result.filename;
+                                lastSavedContent = editor.value;
+                                editor.dispatchEvent(new Event('input'));
+                            };
+                            if (!handleUnsaved(action)) { action(); }
+                        } else {
+                            alert("Incorrect password or corrupted file.");
+                        }
+                    }
+                });
             } else {
-                editor.value = result.content;
-                currentFilePath = null;
-                currentFile.innerText = result.filename;
-                editor.dispatchEvent(new Event('input'));
+                const action = () => {
+                    editor.value = result.content;
+                    if (result.filename.endsWith('.md') && result.path.endsWith('.md')) {
+                        currentFilePath = result.path;
+                    } else {
+                        currentFilePath = null; // Force save as for imported .docx, .xlsx, .txt
+                    }
+                    currentFile.innerText = result.filename;
+                    lastSavedContent = editor.value;
+                    
+                    // Reset lock state for normal documents
+                    isFileLocked = false;
+                    sessionPassword = null;
+                    document.querySelector('#btn-lock md-icon').innerText = 'lock_open';
+                    
+                    editor.dispatchEvent(new Event('input'));
+                };
+                if (!handleUnsaved(action)) {
+                    action();
+                }
             }
         }
     } else {
@@ -305,10 +420,12 @@ document.getElementById('btn-import').addEventListener('click', async () => {
 
 document.getElementById('btn-save').addEventListener('click', async () => {
     if (window.pywebview && window.pywebview.api) {
-        const result = await window.pywebview.api.save_file(editor.value, currentFilePath);
+        const result = await window.pywebview.api.save_file(editor.value, currentFilePath, sessionPassword);
         if (result) {
             currentFilePath = result.path;
             currentFile.innerText = result.filename;
+            lastSavedContent = editor.value;
+            editor.dispatchEvent(new Event('input')); // This triggers dirty state reset
             alert("File saved successfully!");
         }
     } else {
@@ -364,28 +481,73 @@ document.querySelectorAll('.fmt-btn').forEach(btn => {
     });
 });
 
-document.getElementById('sel-text-size').addEventListener('change', (e) => {
-    const val = e.target.value;
-    if (val) {
-        wrapText(`<span style="font-size: ${val}">`, `</span>`, 'text');
-        e.target.value = '';
+
+
+// --- Theme Toggle Logic ---
+const themeToggle = document.getElementById('theme-toggle');
+if (themeToggle) {
+    let savedTheme = 'dark'; // Default to dark
+    try {
+        if (typeof localStorage !== 'undefined') {
+            savedTheme = localStorage.getItem('mdEditor-theme') || 'dark';
+        }
+    } catch (e) {
+        console.warn('localStorage not available', e);
     }
-});
+    
+    document.documentElement.setAttribute('data-theme', savedTheme);
+    
+    // Defer setting selected property to ensure component is ready
+    customElements.whenDefined('md-switch').then(() => {
+        themeToggle.selected = (savedTheme === 'dark');
+    });
+
+    themeToggle.addEventListener('change', () => {
+        const newTheme = themeToggle.selected ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', newTheme);
+        try {
+            if (typeof localStorage !== 'undefined') {
+                localStorage.setItem('mdEditor-theme', newTheme);
+            }
+        } catch (e) {
+            console.warn('localStorage not available', e);
+        }
+    });
+}
+
+// --- General Settings Logic ---
+const settingsModal = document.getElementById('settings-modal');
+const btnSettings = document.getElementById('btn-settings');
+const btnCloseSettings = document.getElementById('btn-close-settings');
+
+if (btnSettings) {
+    btnSettings.addEventListener('click', () => {
+        settingsModal.classList.remove('hidden');
+        if (typeof updateModels === 'function') updateModels();
+    });
+}
+if (btnCloseSettings) {
+    btnCloseSettings.addEventListener('click', () => {
+        settingsModal.classList.add('hidden');
+    });
+}
 
 let currentZoom = 16;
 document.getElementById('btn-zoom-in').addEventListener('click', () => {
     currentZoom += 2;
     document.documentElement.style.setProperty('--doc-font-size', `${currentZoom}px`);
-    document.getElementById('zoom-label').innerText = `${currentZoom}px`;
+    document.getElementById('zoom-level').innerText = `${Math.round((currentZoom/16)*100)}%`;
 });
 
 document.getElementById('btn-zoom-out').addEventListener('click', () => {
     if (currentZoom > 8) {
         currentZoom -= 2;
         document.documentElement.style.setProperty('--doc-font-size', `${currentZoom}px`);
-        document.getElementById('zoom-label').innerText = `${currentZoom}px`;
+        document.getElementById('zoom-level').innerText = `${Math.round((currentZoom/16)*100)}%`;
     }
 });
+
+
 
 function htmlNodeToMarkdown(node) {
     if (node.nodeType === Node.TEXT_NODE) return node.textContent;
@@ -445,4 +607,306 @@ editor.addEventListener('paste', (e) => {
     }
 });
 
+// --- AI Integration Logic ---
+const aiSidebar = document.getElementById('ai-sidebar');
+const btnAiToggle = document.getElementById('btn-ai-toggle');
+const btnSaveKey = document.getElementById('btn-save-key');
+const btnAskAi = document.getElementById('btn-ask-ai');
+const aiPrompt = document.getElementById('ai-prompt');
+const aiChatHistory = document.getElementById('ai-chat-history');
+const aiProvider = document.getElementById('ai-provider');
+const aiModel = document.getElementById('ai-model');
+
+async function updateModels() {
+    const provider = aiProvider.value;
+    if (!provider) return;
+    
+    aiModel.innerHTML = ''; // clear options
+    
+    if (window.pywebview && window.pywebview.api) {
+        try {
+            const models = await window.pywebview.api.get_models(provider);
+            models.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.innerText = m;
+                aiModel.appendChild(opt);
+            });
+            if (models.length > 0) {
+                aiModel.value = models[0];
+            }
+        } catch (e) {
+            console.error("Failed to fetch models", e);
+        }
+    }
+}
+
+aiProvider.addEventListener('change', updateModels);
+
+// Auto-expand textarea
+aiPrompt.addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = (this.scrollHeight) + 'px';
+});
+
+btnAiToggle.addEventListener('click', () => {
+    aiSidebar.classList.toggle('hidden');
+    document.getElementById('splitter-2').classList.toggle('hidden');
+    if (!aiSidebar.classList.contains('hidden')) {
+        updateModels();
+    }
+});
+
+document.getElementById('btn-close-ai').addEventListener('click', () => {
+    aiSidebar.classList.add('hidden');
+    document.getElementById('splitter-2').classList.add('hidden');
+});
+
+btnSaveKey.addEventListener('click', async () => {
+    const provider = aiProvider.value;
+    const key = document.getElementById('ai-api-key').value;
+    if (!key) {
+        alert("Please enter a key.");
+        return;
+    }
+    if (window.pywebview && window.pywebview.api) {
+        const success = await window.pywebview.api.save_api_key(provider, key);
+        if (success) {
+            alert(provider + " API Key encrypted via AES-256 and saved successfully!");
+            document.getElementById('ai-api-key').value = '';
+            aiModal.classList.add('hidden');
+            updateModels();
+        } else {
+            alert("Failed to save key. Make sure the C library is loaded.");
+        }
+    } else {
+        alert("PyWebView API not available.");
+    }
+});
+
+function appendAiMessage(role, text) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `ai-msg ${role}`;
+    
+    const label = document.createElement('strong');
+    label.innerText = role === 'user' ? 'You: ' : 'AI: ';
+    msgDiv.appendChild(label);
+    
+    const content = document.createElement('span');
+    content.innerText = text;
+    msgDiv.appendChild(content);
+
+    if (role === 'ai') {
+        const insertBtn = document.createElement('button');
+        insertBtn.innerText = 'Insert';
+        insertBtn.style.marginTop = '5px';
+        insertBtn.style.display = 'block';
+        insertBtn.style.fontSize = '12px';
+        insertBtn.style.background = '#555';
+        insertBtn.style.color = '#fff';
+        insertBtn.style.border = 'none';
+        insertBtn.style.cursor = 'pointer';
+        insertBtn.onclick = () => {
+            editor.setRangeText(text, editor.selectionStart, editor.selectionEnd, 'end');
+            editor.dispatchEvent(new Event('input'));
+            editor.focus();
+        };
+        msgDiv.appendChild(insertBtn);
+    }
+    
+    aiChatHistory.appendChild(msgDiv);
+    aiChatHistory.scrollTop = aiChatHistory.scrollHeight;
+}
+
+let isAiResponding = false;
+
+btnAskAi.addEventListener('click', async () => {
+    if (isAiResponding) return;
+    
+    const prompt = aiPrompt.value.trim();
+    if (!prompt) return;
+    
+    const provider = aiProvider.value;
+    const model = aiModel.value;
+    
+    appendAiMessage('user', prompt);
+    aiPrompt.value = '';
+    
+    isAiResponding = true;
+    btnAskAi.innerHTML = '<md-icon>stop</md-icon>';
+    btnAskAi.style.background = 'var(--md-sys-color-error)';
+    
+    if (window.pywebview && window.pywebview.api) {
+        appendAiMessage('ai', '...'); 
+        const loadingDiv = aiChatHistory.lastChild;
+        
+        try {
+            const response = await window.pywebview.api.ask_ai(provider, model, prompt);
+            loadingDiv.remove();
+            appendAiMessage('ai', response);
+        } catch (e) {
+            loadingDiv.remove();
+            appendAiMessage('ai', "Error connecting to backend.");
+        }
+    } else {
+        appendAiMessage('ai', "PyWebView API not available.");
+    }
+    
+    isAiResponding = false;
+    btnAskAi.innerHTML = '<md-icon>arrow_upward</md-icon>';
+    btnAskAi.style.background = 'var(--accent)';
+});
+
+aiPrompt.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        btnAskAi.click();
+    }
+});
+
 editor.dispatchEvent(new Event('input'));
+
+// --- Lock & Password Logic ---
+let sessionPassword = null;
+let isFileLocked = false;
+
+document.getElementById('btn-lock').addEventListener('click', () => {
+    if (isFileLocked) {
+        isFileLocked = false;
+        sessionPassword = null;
+        document.querySelector('#btn-lock md-icon').innerText = 'lock_open';
+    } else {
+        showPasswordDialog('Set Password', 'Enter a password to lock this file upon saving.', (pwd) => {
+            if (pwd) {
+                isFileLocked = true;
+                sessionPassword = pwd;
+                document.querySelector('#btn-lock md-icon').innerText = 'lock';
+            }
+        });
+    }
+});
+
+function showPasswordDialog(title, msg, callback) {
+    document.getElementById('password-title').innerText = title;
+    document.getElementById('password-msg').innerText = msg;
+    const input = document.getElementById('input-password');
+    input.value = '';
+    const dialog = document.getElementById('password-dialog');
+    dialog.classList.remove('hidden');
+    
+    const submitBtn = document.getElementById('btn-password-submit');
+    const cancelBtn = document.getElementById('btn-password-cancel');
+    
+    const cleanup = () => {
+        dialog.classList.add('hidden');
+        submitBtn.removeEventListener('click', onSubmit);
+        cancelBtn.removeEventListener('click', onCancel);
+    };
+    
+    const onSubmit = () => {
+        const pwd = input.value;
+        cleanup();
+        callback(pwd);
+    };
+    const onCancel = () => {
+        cleanup();
+        callback(null);
+    };
+    
+    submitBtn.addEventListener('click', onSubmit);
+    cancelBtn.addEventListener('click', onCancel);
+}
+
+// --- Shortcuts Logic ---
+document.getElementById('btn-show-shortcuts').addEventListener('click', () => {
+    document.getElementById('settings-modal').classList.add('hidden');
+    document.getElementById('shortcuts-dialog').classList.remove('hidden');
+});
+
+document.getElementById('btn-shortcuts-close').addEventListener('click', () => {
+    document.getElementById('shortcuts-dialog').classList.add('hidden');
+});
+
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey) {
+        switch (e.key.toLowerCase()) {
+            case 'b':
+                e.preventDefault();
+                wrapText('**', '**', 'bold text');
+                break;
+            case 'i':
+                e.preventDefault();
+                wrapText('*', '*', 'italic text');
+                break;
+            case 'u':
+                e.preventDefault();
+                wrapText('++', '++', 'underlined text');
+                break;
+            case 's':
+                e.preventDefault();
+                document.getElementById('btn-save').click();
+                break;
+            case 'o':
+                e.preventDefault();
+                document.getElementById('btn-open').click();
+                break;
+            case 'n':
+                e.preventDefault();
+                document.getElementById('btn-new').click();
+                break;
+        }
+    }
+});
+
+// --- Resizable Panels Logic ---
+const splitterOne = document.getElementById('splitter-1');
+const splitterTwo = document.getElementById('splitter-2');
+const editorPane = document.getElementById('editor-pane');
+const previewPane = document.getElementById('preview-pane');
+
+let isDraggingSplitter1 = false;
+let isDraggingSplitter2 = false;
+
+splitterOne.addEventListener('mousedown', (e) => {
+    isDraggingSplitter1 = true;
+    splitterOne.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+});
+
+splitterTwo.addEventListener('mousedown', (e) => {
+    isDraggingSplitter2 = true;
+    splitterTwo.classList.add('dragging');
+    document.body.style.cursor = 'col-resize';
+});
+
+document.addEventListener('mousemove', (e) => {
+    if (!isDraggingSplitter1 && !isDraggingSplitter2) return;
+    
+    const containerRect = document.querySelector('.editor-container').getBoundingClientRect();
+    
+    if (isDraggingSplitter1) {
+        let newWidth = e.clientX - containerRect.left;
+        const totalWidth = containerRect.width;
+        newWidth = Math.max(100, Math.min(newWidth, totalWidth - 200));
+        editorPane.style.flex = `0 0 ${newWidth}px`;
+    }
+    
+    if (isDraggingSplitter2) {
+        let sidebarWidth = containerRect.right - e.clientX;
+        const totalWidth = containerRect.width;
+        sidebarWidth = Math.max(200, Math.min(sidebarWidth, totalWidth - 300));
+        aiSidebar.style.flex = `0 0 ${sidebarWidth}px`;
+    }
+});
+
+document.addEventListener('mouseup', () => {
+    if (isDraggingSplitter1) {
+        isDraggingSplitter1 = false;
+        splitterOne.classList.remove('dragging');
+    }
+    if (isDraggingSplitter2) {
+        isDraggingSplitter2 = false;
+        splitterTwo.classList.remove('dragging');
+    }
+    document.body.style.cursor = '';
+});

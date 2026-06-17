@@ -1,66 +1,214 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>mdEditor</title>
     <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+        rel="stylesheet" />
+    <script type="module" src="https://esm.sh/@material/web/all.js?bundle&target=es2020"></script>
 </head>
+
 <body>
     <div class="toolbar">
         <div class="logo">mdEditor</div>
         <div class="file-ops">
-            <button id="btn-new">New File</button>
-            <button id="btn-open">Open File</button>
-            <button id="btn-import">Import File</button>
-            <button id="btn-save">Save File</button>
+            <md-filled-button id="btn-new">New File</md-filled-button>
+            <md-outlined-button id="btn-open">Open / Import</md-outlined-button>
+            <md-outlined-button id="btn-save">Save</md-outlined-button>
+            <md-icon-button id="btn-lock" title="Lock File" style="margin-left: 5px;"><md-icon>lock_open</md-icon></md-icon-button>
+            <md-filled-button id="btn-ai-toggle" style="--md-sys-color-primary: var(--accent); margin-left: 5px;">AI
+                Chat</md-filled-button>
+            <md-icon-button id="btn-settings" title="Settings"
+                style="margin-left: 5px;"><md-icon>settings</md-icon></md-icon-button>
             <span id="current-file">Untitled.md</span>
         </div>
-        <div class="zoom-ops">
-            <button id="btn-zoom-out" title="Decrease Document Font Size">-</button>
-            <span id="zoom-label">16px</span>
-            <button id="btn-zoom-in" title="Increase Document Font Size">+</button>
-        </div>
-        <div class="stats">
-            <span id="stat-words">0 words</span> | 
-            <span id="stat-chars">0 chars</span> | 
-            <span id="stat-lines">1 lines</span>
-        </div>
+    </div>
     </div>
     <div class="format-toolbar">
-        <select id="sel-text-size" class="fmt-select" title="Selected Text Size">
-            <option value="">Text Size</option>
-            <option value="12px">Small</option>
-            <option value="16px">Normal</option>
-            <option value="20px">Large</option>
-            <option value="24px">Huge</option>
-        </select>
+        <div class="stats" style="margin-right: 16px;">
+            <span id="stat-words">0 words</span> |
+            <span id="stat-chars">0 chars</span> |
+            <span id="stat-lines">1 lines</span>
+        </div>
         <span class="fmt-sep">|</span>
-        <button class="fmt-btn" data-fmt="bold" title="Bold"><b>B</b></button>
-        <button class="fmt-btn" data-fmt="italic" title="Italic"><i>I</i></button>
-        <button class="fmt-btn" data-fmt="underline" title="Underline"><u>U</u></button>
-        <button class="fmt-btn" data-fmt="strikethrough" title="Strikethrough"><del>S</del></button>
+        <md-icon-button class="fmt-btn" data-fmt="bold" title="Bold"><md-icon>format_bold</md-icon></md-icon-button>
+        <md-icon-button class="fmt-btn" data-fmt="italic"
+            title="Italic"><md-icon>format_italic</md-icon></md-icon-button>
+        <md-icon-button class="fmt-btn" data-fmt="underline"
+            title="Underline"><md-icon>format_underlined</md-icon></md-icon-button>
+        <md-icon-button class="fmt-btn" data-fmt="strikethrough"
+            title="Strikethrough"><md-icon>strikethrough_s</md-icon></md-icon-button>
         <span class="fmt-sep">|</span>
-        <button class="fmt-btn" data-fmt="h1" title="Heading 1">H1</button>
-        <button class="fmt-btn" data-fmt="h2" title="Heading 2">H2</button>
-        <button class="fmt-btn" data-fmt="h3" title="Heading 3">H3</button>
+        <md-icon-button class="fmt-btn" data-fmt="h1" title="Heading 1"><md-icon>format_h1</md-icon></md-icon-button>
+        <md-icon-button class="fmt-btn" data-fmt="h2" title="Heading 2"><md-icon>format_h2</md-icon></md-icon-button>
+        <md-icon-button class="fmt-btn" data-fmt="h3" title="Heading 3"><md-icon>format_h3</md-icon></md-icon-button>
         <span class="fmt-sep">|</span>
-        <button class="fmt-btn" data-fmt="quote" title="Blockquote">”</button>
-        <button class="fmt-btn" data-fmt="code" title="Code">&lt;/&gt;</button>
-        <button class="fmt-btn" data-fmt="link" title="Link">🔗</button>
+        <md-icon-button class="fmt-btn" data-fmt="quote"
+            title="Blockquote"><md-icon>format_quote</md-icon></md-icon-button>
+        <md-icon-button class="fmt-btn" data-fmt="code" title="Code"><md-icon>code</md-icon></md-icon-button>
+        <md-icon-button class="fmt-btn" data-fmt="link" title="Link"><md-icon>link</md-icon></md-icon-button>
         <span class="fmt-sep">|</span>
-        <button class="fmt-btn" data-fmt="list-ul" title="Unordered List">• List</button>
-        <button class="fmt-btn" data-fmt="list-ol" title="Ordered List">1. List</button>
-        <button class="fmt-btn" data-fmt="table" title="Table">Table</button>
+        <md-icon-button class="fmt-btn" data-fmt="list-ul"
+            title="Unordered List"><md-icon>format_list_bulleted</md-icon></md-icon-button>
+        <md-icon-button class="fmt-btn" data-fmt="list-ol"
+            title="Ordered List"><md-icon>format_list_numbered</md-icon></md-icon-button>
+        <md-icon-button class="fmt-btn" data-fmt="table" title="Table"><md-icon>table_chart</md-icon></md-icon-button>
     </div>
     <div class="editor-container">
-        <div class="pane editor-pane">
+        <div class="pane editor-pane" id="editor-pane">
             <textarea id="editor" placeholder="Type Markdown here..."></textarea>
         </div>
-        <div class="pane preview-pane" id="preview">
-            <!-- Rendered HTML will appear here -->
+        <div class="splitter" id="splitter-1"></div>
+        <div class="pane preview-pane" id="preview-pane">
+            <div id="preview"></div>
+        </div>
+        <div class="splitter hidden" id="splitter-2"></div>
+        <div id="ai-sidebar" class="hidden">
+            <div class="ai-header">
+                <div style="display: flex; align-items: center;">
+                    <md-icon style="vertical-align: middle; margin-right: 8px;">smart_toy</md-icon>
+                    <span>AI Assistant</span>
+                </div>
+                <md-icon-button id="btn-close-ai" title="Close AI Panel"><md-icon>close</md-icon></md-icon-button>
+            </div>
+            <div id="ai-chat-history"></div>
+            <div class="ai-capsule">
+                <textarea id="ai-prompt" placeholder="Ask AI..." rows="1"></textarea>
+                <div class="ai-capsule-bottom">
+                    <select id="ai-provider" class="capsule-select" title="Provider" style="display:none;">
+                        <option value="Gemini">Google Gemini</option>
+                        <option value="OpenAI">OpenAI</option>
+                        <option value="Claude">Anthropic Claude</option>
+                        <option value="OpenRouter">OpenRouter</option>
+                    </select>
+                    <select id="ai-model" class="capsule-select" title="Model">
+                        <option value="">Loading models...</option>
+                    </select>
+                    <div style="flex:1"></div>
+                    <md-icon-button id="btn-ask-ai" style="background: var(--accent); color: var(--bg-color); border-radius: 50%; width: 32px; height: 32px; --md-icon-button-icon-size: 18px;"><md-icon>arrow_upward</md-icon></md-icon-button>
+                </div>
+            </div>
         </div>
     </div>
+
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content" style="max-width: 450px;">
+            <h3
+                style="margin-top: 0; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                Settings</h3>
+
+            <label
+                style="display: flex; justify-content: space-between; align-items: center; color: var(--text-color); cursor: pointer; padding: 8px 0;">
+                <span>Dark Mode</span>
+                <md-switch id="theme-toggle" icons aria-label="Toggle Dark Mode"></md-switch>
+            </label>
+
+
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                <span style="color: var(--text-color);">Document Zoom</span>
+                <div class="zoom-ops"
+                    style="display: flex; align-items: center; gap: 8px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: var(--md-sys-shape-corner-small); padding: 2px 8px;">
+                    <md-icon-button id="btn-zoom-out" title="Decrease Document Font Size"><md-icon>remove</md-icon></md-icon-button>
+                    <span id="zoom-level" style="min-width: 40px; text-align: center;">100%</span>
+                    <md-icon-button id="btn-zoom-in" title="Increase Document Font Size"><md-icon>add</md-icon></md-icon-button>
+                </div>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0;">
+                <span style="color: var(--text-color);">Keyboard Shortcuts</span>
+                <md-outlined-button id="btn-show-shortcuts">View Shortcuts</md-outlined-button>
+            </div>
+
+            <h4
+                style="margin: 15px 0 5px 0; color: var(--accent); border-top: 1px solid var(--border-color); padding-top: 10px;">
+                AI Settings</h4>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <md-outlined-text-field id="ai-api-key" type="password" label="API Key"
+                    placeholder="Encrypted securely via AES-256"></md-outlined-text-field>
+                <div style="display: flex; justify-content: flex-end;">
+                    <md-filled-button id="btn-save-key">Save Key</md-filled-button>
+                </div>
+            </div>
+
+            <div
+                style="display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                <md-text-button id="btn-close-settings">Close</md-text-button>
+            </div>
+        </div>
+    </div>
+
+    <md-dialog id="unsaved-dialog">
+        <div slot="headline">Unsaved Changes</div>
+        <div slot="content">
+            You have unsaved changes in your document. What would you like to do?
+        </div>
+        <div slot="actions">
+            <md-text-button id="btn-unsaved-cancel">Cancel</md-text-button>
+            <md-text-button id="btn-unsaved-discard" style="color: var(--md-sys-color-error);">Discard</md-text-button>
+            <md-filled-button id="btn-unsaved-save">Save</md-filled-button>
+        </div>
+    </md-dialog>
+
+    <!-- Password Modal -->
+    <div id="password-dialog" class="modal hidden">
+        <div class="modal-content" style="max-width: 400px;">
+            <h3 id="password-title" style="margin-top: 0;">Enter Password</h3>
+            <p id="password-msg" style="color: var(--text-color); opacity: 0.8; margin-bottom: 20px;">Please enter the password for this file.</p>
+            <md-outlined-text-field id="input-password" type="password" placeholder="Password" style="width: 100%;"></md-outlined-text-field>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+                <md-text-button id="btn-password-cancel">Cancel</md-text-button>
+                <md-filled-button id="btn-password-submit">Submit</md-filled-button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shortcuts Modal -->
+    <div id="shortcuts-dialog" class="modal hidden">
+        <div class="modal-content" style="max-width: 500px;">
+            <h3 style="margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Keyboard Shortcuts</h3>
+            <table style="width: 100%; color: var(--text-color); border-collapse: collapse;">
+                <tr style="border-bottom: 1px solid var(--border-color);">
+                    <td style="padding: 8px 0; font-weight: bold;">Action</td>
+                    <td style="padding: 8px 0; font-weight: bold; text-align: right;">Shortcut</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color); opacity: 0.8;">
+                    <td style="padding: 8px 0;">Bold Text</td>
+                    <td style="padding: 8px 0; text-align: right;"><kbd>Ctrl + B</kbd></td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color); opacity: 0.8;">
+                    <td style="padding: 8px 0;">Italic Text</td>
+                    <td style="padding: 8px 0; text-align: right;"><kbd>Ctrl + I</kbd></td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color); opacity: 0.8;">
+                    <td style="padding: 8px 0;">Underline Text</td>
+                    <td style="padding: 8px 0; text-align: right;"><kbd>Ctrl + U</kbd></td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color); opacity: 0.8;">
+                    <td style="padding: 8px 0;">Save File</td>
+                    <td style="padding: 8px 0; text-align: right;"><kbd>Ctrl + S</kbd></td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color); opacity: 0.8;">
+                    <td style="padding: 8px 0;">Open / Import</td>
+                    <td style="padding: 8px 0; text-align: right;"><kbd>Ctrl + O</kbd></td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color); opacity: 0.8;">
+                    <td style="padding: 8px 0;">New File</td>
+                    <td style="padding: 8px 0; text-align: right;"><kbd>Ctrl + N</kbd></td>
+                </tr>
+            </table>
+            <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+                <md-filled-button id="btn-shortcuts-close">Close</md-filled-button>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js"></script>
 </body>
+
 </html>
