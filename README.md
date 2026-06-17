@@ -1,14 +1,14 @@
-# mdEditor ✨
+# mdEditor 
 
 `<HUMAN MADE>`
 
 Hey there! Welcome to **mdEditor** — a passion project built from the ground up to be the leanest, fastest, and most feature-packed Markdown editor you've ever used. Currently available for **Linux**.
 
-I got tired of electron apps hogging memory, so I built mdEditor using a **clean technology stack**. It combines the raw speed of a custom C-compiled statistical engine with a lightweight Python backend (`pywebview`), beautifully crafted Google Material 3 Web Components for the UI, and a zero-dependency Native JavaScript frontend parser! 🚀
+I got tired of electron apps hogging memory, so I built mdEditor using a **clean technology stack**. It combines the raw speed of a custom C-compiled statistical engine with a lightweight Python backend (`pywebview`), beautifully crafted Google Material 3 Web Components for the UI, and a zero-dependency Native JavaScript frontend parser!
 
 ## What's New? (Phase 1 Completed!)
 - **Integrated AI Assistant:** A beautifully designed side-panel AI assistant with a stretching "capsule" input. Talk to your documents using Gemini, OpenAI, Claude, or OpenRouter! API calls are securely processed natively using our custom `libai.so` C plugin.
-- **AES-256 Password Lock:** Military-grade encryption lets you lock any `.md` file with a password. It's automatically decrypted on the fly when you try to open it! 🔒
+- **AES-256 Password Lock:** Military-grade encryption lets you lock any `.md` file with a password. It's automatically decrypted on the fly when you try to open it! 
 - **Fully Resizable Workspace:** Hover over the dividers between the editor, the preview renderer, and the AI panel to seamlessly drag and resize them to your liking.
 - **Keyboard Shortcuts:** Native shortcuts support built right in (`Ctrl+S`, `Ctrl+N`, `Ctrl+B`, `Ctrl+O`, etc.) without browser interception.
 - **Dark Mode Enhancements:** Dynamic icons that match your theme, gorgeous rounded inputs, and custom scrollbars.
