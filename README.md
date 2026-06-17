@@ -14,7 +14,6 @@ I got tired of electron apps hogging memory, so I built mdEditor using a **clean
 - **Dark Mode Enhancements:** Dynamic icons that match your theme, gorgeous rounded inputs, and custom scrollbars.
 
 ## Core Features
-- **Zero Third-Party Node/JS Dependencies:** Everything is built using raw vanilla HTML/CSS/JS. No React, no heavy frameworks.
 - **Custom Markdown Parsing Engine:** Natively parses bold, italic, highlights, superscript, subscript, code blocks, checklists, custom tables, and multi-level nested headers without external libraries.
 - **High-Performance C Stats:** Uses a native C-compiled library (`libstats.so`) via Python `ctypes` to calculate word, character, and line counts instantly on every keystroke.
 - **Native Document Importer:** Can unzip and extract `.docx` (Word) and `.xlsx` (Excel) files natively in Python (using standard libraries) and convert them straight into Markdown tables and text!
@@ -22,7 +21,7 @@ I got tired of electron apps hogging memory, so I built mdEditor using a **clean
 - **Advanced GitHub Alerts:** Support for nested blockquotes and styled colored alert boxes (`!NOTE`, `!WARNING`, etc.).
 
 ## Tech Stack
-- **Frontend View:** HTML5, Vanilla CSS3, Vanilla JavaScript (ES6+).
+- **Frontend View:** HTML5, CSS3, Material3Web, JS.
 - **Backend Bridge:** Python 3 + `pywebview` for native desktop OS window management and file I/O operations.
 - **Performance Layer:** Native C compiler using GCC for statistics algorithms and AI API routing.
 
