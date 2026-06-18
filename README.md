@@ -1,37 +1,59 @@
-# mdEditor 
+<div align="center">
+  <h1>🖋️ mdEditor ✨</h1>
+</div>
 
-`<HUMAN MADE>`
+<div align="center">
+  <img src="https://img.shields.io/badge/Markdown-000000?style=for-the-badge&logo=markdown&logoColor=white" alt="Markdown">
+  <img src="https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Linux">
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white" alt="C">
+</div>
 
-Hey there! Welcome to **mdEditor** — a passion project built from the ground up to be the leanest, fastest, and most feature-packed Markdown editor you've ever used. Currently available for **Linux**.
+---
 
-I got tired of electron apps hogging memory, so I built mdEditor using a **clean technology stack**. It combines the raw speed of a custom C-compiled statistical engine with a lightweight Python backend (`pywebview`), beautifully crafted Google Material 3 Web Components for the UI, and a zero-dependency Native JavaScript frontend parser!
+## ⚡ What is it?
+**mdEditor** is a lightning-fast, highly-capable Markdown editor and viewer currently built exclusively for **Linux**. It was created as a passion project to deliver an incredibly lean and memory-efficient writing environment by marrying a pure vanilla JavaScript frontend with a high-performance custom C-compiled statistical engine and a lightweight Python backend.
 
-## What's New? (Phase 1 Completed!)
-- **Integrated AI Assistant:** A beautifully designed side-panel AI assistant with a stretching "capsule" input. Talk to your documents using Gemini, OpenAI, Claude, or OpenRouter! API calls are securely processed natively using our custom `libai.so` C plugin.
-- **AES-256 Password Lock:** Military-grade encryption lets you lock any `.md` file with a password. It's automatically decrypted on the fly when you try to open it! 
-- **Fully Resizable Workspace:** Hover over the dividers between the editor, the preview renderer, and the AI panel to seamlessly drag and resize them to your liking.
-- **Keyboard Shortcuts:** Native shortcuts support built right in (`Ctrl+S`, `Ctrl+N`, `Ctrl+B`, `Ctrl+O`, etc.) without browser interception.
-- **Dark Mode Enhancements:** Dynamic icons that match your theme, gorgeous rounded inputs, and custom scrollbars.
+## 🚀 How is it better than others?
+Modern markdown editors like Obsidian or Typora rely heavily on Electron, packaging entire web browsers into desktop applications which hog system memory and feel sluggish. They suffer from "feature creep," adding bloated plugin ecosystems and complex knowledge graph tools that distract from the core writing experience. 
 
-## Core Features
-- **Zero Third-Party Node/JS Dependencies:** Everything is built using raw vanilla HTML/CSS/JS. No React, no heavy frameworks.
-- **Custom Markdown Parsing Engine:** Natively parses bold, italic, highlights, superscript, subscript, code blocks, checklists, custom tables, and multi-level nested headers without external libraries.
-- **High-Performance C Stats:** Uses a native C-compiled library (`libstats.so`) via Python `ctypes` to calculate word, character, and line counts instantly on every keystroke.
-- **Native Document Importer:** Can unzip and extract `.docx` (Word) and `.xlsx` (Excel) files natively in Python (using standard libraries) and convert them straight into Markdown tables and text!
-- **Smart Paste (HTML to Markdown):** Copies rich-text formatting from any website or Word document and intelligently converts the DOM nodes into pure Markdown automatically upon pasting.
-- **Advanced GitHub Alerts:** Support for nested blockquotes and styled colored alert boxes (`!NOTE`, `!WARNING`, etc.).
+**mdEditor** abandons Electron completely. By using PyWebView for native OS windowing, zero-dependency vanilla JS for parsing, and a raw C-backend (`libstats.so` and `libai.so`) for heavy computations, mdEditor achieves instant startup times, nearly zero memory overhead, and lightning-fast real-time rendering. You get true raw control over your Markdown with the power of native OS performance.
 
-## Tech Stack
-- **Frontend View:** HTML5, Vanilla CSS3, Vanilla JavaScript (ES6+).
-- **Backend Bridge:** Python 3 + `pywebview` for native desktop OS window management and file I/O operations.
-- **Performance Layer:** Native C compiler using GCC for statistics algorithms and AI API routing.
+## ✨ Features
+- **Integrated Native AI Assistant:** Seamless side-panel AI chat powered by Gemini, OpenAI, Claude, and OpenRouter, processed securely via our C plugin (`libai.so`).
+- **AES-256 File Locking:** Military-grade password protection that natively encrypts and decrypts your `.md` files on the fly.
+- **Custom Markdown Parsing Engine:** Zero-dependency native parser supporting bold, italic, highlights, superscript, subscript, code blocks, checklists, and custom tables.
+- **High-Performance C Stats:** Instantaneous word, character, and line counting processed in C (`libstats.so`) via Python `ctypes`.
+- **Native Document Importer:** Unzips and extracts `.docx` and `.xlsx` files straight into Markdown tables and text without third-party converters.
+- **Smart Paste:** Intelligently copies rich-text formatting from any website and converts DOM nodes directly into pure Markdown upon pasting.
+- **Advanced GitHub Alerts:** Support for nested blockquotes and beautifully styled colored alert boxes (`!NOTE`, `!WARNING`, etc.).
+- **Fully Resizable Workspace:** Drag-to-resize splitters giving you complete control over your editor, preview, and AI panels.
+- **Keyboard Shortcuts:** Native workflow shortcuts (`Ctrl+S`, `Ctrl+N`, `Ctrl+B`, `Ctrl+O`) built directly into the UI without browser interception.
 
-## How to Run
+## 🙌 Credits
+Huge thanks to the creators of the technologies that made this possible:
+- **[PyWebView](https://pywebview.flowrl.com/)** for providing a lightweight, native GUI bridge to Python.
+- **[cJSON](https://github.com/DaveGamble/cJSON)** by Dave Gamble for the incredibly fast C-based JSON parser used in our AI module.
+- **[Material Web Components](https://github.com/material-components/material-web)** by Google for the stunning and accessible UI components.
+
+## ⚙️ How to Install & Run
+1. Make sure you have Python 3 and GCC installed on your Linux machine.
+2. Clone the repository: `git clone git@github.com:Aarav90-cpu/mdEditor.git`
+3. Install Python dependencies: `pip install pywebview`
+4. Compile the native C libraries:
 ```bash
-# Make sure the C-libraries are compiled
-# gcc -shared -o clib/libstats.so -fPIC clib/stats.c
-# gcc -shared -o clib/libai.so -fPIC clib/ai.c clib/cJSON.c -lcurl
-
-# Run the PyWebView Application
+gcc -shared -o clib/libstats.so -fPIC clib/stats.c
+gcc -shared -o clib/libai.so -fPIC clib/ai.c clib/cJSON.c -lcurl
+```
+5. Run the editor!
+```bash
 python3 python/server.py
 ```
+
+## 📦 Dependencies
+- **Material 3 UI (`@material/web`)**: Used to deliver gorgeous buttons, dialogs, sliders, and icons for the frontend.
+- **`pywebview`**: For rendering the web UI natively in a Python window.
+- **`libcurl`**: Required by the C-backend for making secure AI API requests.
+
+---
+**Licensed:** Apache License 2.0 Aarav Ravindra Kharade 2026
