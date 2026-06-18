@@ -307,6 +307,8 @@ if (btnUnsavedSave) {
 }
 
 editor.addEventListener('input', () => {
+    clearTimeout(undoTimeout);
+    undoTimeout = setTimeout(saveState, 500);
     const text = editor.value;
     preview.innerHTML = parseMarkdown(text);
     
@@ -433,7 +435,53 @@ document.getElementById('btn-save').addEventListener('click', async () => {
     }
 });
 
+let undoStack = [];
+let redoStack = [];
+let isUndoRedoAction = false;
+let undoTimeout;
+
+function saveState() {
+    if (isUndoRedoAction) return;
+    const currentState = {
+        value: editor.value,
+        selectionStart: editor.selectionStart,
+        selectionEnd: editor.selectionEnd
+    };
+    if (undoStack.length === 0 || undoStack[undoStack.length - 1].value !== currentState.value) {
+        undoStack.push(currentState);
+        if (undoStack.length > 100) undoStack.shift();
+        redoStack = []; 
+    }
+}
+
+function doUndo() {
+    if (undoStack.length > 1) {
+        isUndoRedoAction = true;
+        redoStack.push(undoStack.pop());
+        const state = undoStack[undoStack.length - 1];
+        editor.value = state.value;
+        editor.setSelectionRange(state.selectionStart, state.selectionEnd);
+        editor.dispatchEvent(new Event('input'));
+        isUndoRedoAction = false;
+        editor.focus();
+    }
+}
+
+function doRedo() {
+    if (redoStack.length > 0) {
+        isUndoRedoAction = true;
+        const state = redoStack.pop();
+        undoStack.push(state);
+        editor.value = state.value;
+        editor.setSelectionRange(state.selectionStart, state.selectionEnd);
+        editor.dispatchEvent(new Event('input'));
+        isUndoRedoAction = false;
+        editor.focus();
+    }
+}
+
 function wrapText(prefix, suffix, defaultText = 'text') {
+    saveState();
     const start = editor.selectionStart;
     const end = editor.selectionEnd;
     const selectedText = editor.value.substring(start, end);
@@ -441,10 +489,12 @@ function wrapText(prefix, suffix, defaultText = 'text') {
     
     editor.setRangeText(prefix + replacement + suffix, start, end, 'select');
     editor.dispatchEvent(new Event('input'));
+    saveState();
     editor.focus();
 }
 
 function insertLinePrefix(prefix) {
+    saveState();
     const start = editor.selectionStart;
     const end = editor.selectionEnd;
     const textBefore = editor.value.substring(0, start);
@@ -452,8 +502,12 @@ function insertLinePrefix(prefix) {
     const lineStart = textBefore.lastIndexOf('\n') + 1;
     editor.setRangeText(prefix, lineStart, lineStart, 'end');
     editor.dispatchEvent(new Event('input'));
+    saveState();
     editor.focus();
 }
+
+document.getElementById('btn-undo').addEventListener('click', doUndo);
+document.getElementById('btn-redo').addEventListener('click', doRedo);
 
 document.querySelectorAll('.fmt-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -830,6 +884,14 @@ document.getElementById('btn-shortcuts-close').addEventListener('click', () => {
 document.addEventListener('keydown', (e) => {
     if (e.ctrlKey) {
         switch (e.key.toLowerCase()) {
+            case 'z':
+                e.preventDefault();
+                doUndo();
+                break;
+            case 'y':
+                e.preventDefault();
+                doRedo();
+                break;
             case 'b':
                 e.preventDefault();
                 wrapText('**', '**', 'bold text');
@@ -910,3 +972,4 @@ document.addEventListener('mouseup', () => {
     }
     document.body.style.cursor = '';
 });
+saveState();
