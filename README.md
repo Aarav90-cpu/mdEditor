@@ -17,6 +17,7 @@
 ## How is it better than others?
 Modern markdown editors like Obsidian or Typora rely heavily on Electron, packaging entire web browsers into desktop applications which hog system memory and feel sluggish. They suffer from "feature creep," adding bloated plugin ecosystems and complex knowledge graph tools that distract from the core writing experience. 
 
+<<<<<<< HEAD
 **mdEditor** abandons Electron completely. By using PyWebView for native OS windowing, JS for parsing, and a raw C-backend (`libstats.so` and `libai.so`) for heavy computations, mdEditor achieves instant startup times, minimal memory overhead, and lightning-fast real-time rendering. You get true raw control over your Markdown with the power of native OS performance.
 
 ## Features
@@ -27,6 +28,19 @@ Modern markdown editors like Obsidian or Typora rely heavily on Electron, packag
 - **Native Document Importer:** Unzips and extracts `.docx` and `.xlsx` files straight into Markdown tables and text without third-party converters.
 - **Smart Paste:** Intelligently copies rich-text formatting from any website and converts DOM nodes directly into Markdown upon pasting.
 - **Advanced GitHub Alerts:** Support for nested blockquotes and beautifully styled colored alert boxes (`!NOTE`, `!WARNING`, etc.).
+=======
+## Core Features
+- **Custom Markdown Parsing Engine:** Natively parses bold, italic, highlights, superscript, subscript, code blocks, checklists, custom tables, and multi-level nested headers without external libraries.
+- **High-Performance C Stats:** Uses a native C-compiled library (`libstats.so`) via Python `ctypes` to calculate word, character, and line counts instantly on every keystroke.
+- **Native Document Importer:** Can unzip and extract `.docx` (Word) and `.xlsx` (Excel) files natively in Python (using standard libraries) and convert them straight into Markdown tables and text!
+- **Smart Paste (HTML to Markdown):** Copies rich-text formatting from any website or Word document and intelligently converts the DOM nodes into pure Markdown automatically upon pasting.
+- **Advanced GitHub Alerts:** Support for nested blockquotes and styled colored alert boxes (`!NOTE`, `!WARNING`, etc.).
+
+## Tech Stack
+- **Frontend View:** HTML5, CSS3, Material3Web, JS.
+- **Backend Bridge:** Python 3 + `pywebview` for native desktop OS window management and file I/O operations.
+- **Performance Layer:** Native C compiler using GCC for statistics algorithms and AI API routing.
+>>>>>>> 073728bf20f33ecbf076a19c3625ff246a2d3e72
 
 ## Credits
 Huge thanks to the creators of the technologies that made this possible:
