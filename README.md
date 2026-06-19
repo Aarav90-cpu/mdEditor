@@ -1,12 +1,7 @@
-<div align="center">
-  <h1>mdEditor</h1>
-</div>
+# mdEditor
 
 <div align="center">
-  <img src="https://img.shields.io/badge/Markdown-000000?style=for-the-badge&logo=markdown&logoColor=white" alt="Markdown">
-  <img src="https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Linux">
-  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
-  <img src="https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white" alt="C">
+  <img src="https://img.shields.io/badge/Markdown-000000?style=for-the-badge&logo=markdown&logoColor=white" alt="Markdown"><img src="https://img.shields.io/badge/Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Linux"><img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"><img src="https://img.shields.io/badge/C-00599C?style=for-the-badge&logo=c&logoColor=white" alt="C">
 </div>
 
 ---
@@ -30,24 +25,31 @@ Modern markdown editors like Obsidian or Typora rely heavily on Electron, packag
 
 ## Credits
 Huge thanks to the creators of the technologies that made this possible:
-- **[PyWebView](https://pywebview.flowrl.com/)** for providing a lightweight, native GUI bridge to Python.
 - **[cJSON](https://github.com/DaveGamble/cJSON)** by Dave Gamble for the incredibly fast C-based JSON parser used in our AI module.
 - **[Material Web Components](https://github.com/material-components/material-web)** by Google for the stunning and accessible UI components.
 
 ## How to Install & Run
-1. Make sure you have Python 3, `make`, and GCC installed on your Linux machine.
-2. Clone the repository: `git clone git@github.com:Aarav90-cpu/mdEditor.git`
-3. Install Python dependencies: `pip install pywebview`
-4. Use _npm_ to install `@material/web` with ``npm install @material/web``
-5. Install _libcurl_ with arpkg/pacman/atp or the package manager of your choice (sudo pacman -Syu libcurl)
-6. Build the C plugins and run the editor:
+1) Make sure you have Python 3, `make`, and GCC installed on your Linux machine.
+2) Clone the repository: `git clone git@github.com:Aarav90-cpu/mdEditor.git`
+3) Install Python dependencies: 
+```pip
+
+pip install qtpy PyQt6 PyQt6-WebEngine markdown2docx pandas openpyxl
+
+```
+4) Use _npm_ to install `@material/web` with ``npm install @material/web``
+5) Install _libcurl_ with arpkg/pacman/atp or the package manager of your choice (sudo pacman -Syu libcurl
+6) Build the C plugins and run the editor:
 ```bash
+
 make run
+
 ```
 
 ## Dependencies
 - **Material 3 UI (`@material/web`)**: Used to deliver gorgeous buttons, dialogs, sliders, and icons for the frontend.
 - **`pywebview`**: For rendering the web UI natively in a Python window.
+- **`qtpy`, `PyQt6` and `PyQt6-WebEngine`**: Ensures the UI uses the robust Chromium engine instead of GTK.
 - **`libcurl`**: Required by the C-backend for making secure AI API requests.
 
 ---

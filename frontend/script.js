@@ -37,7 +37,7 @@ function parseInline(text) {
     text = text.replace(/~([^\s~]+)~/g, '<sub>$1</sub>');
     text = text.replace(/\|\|([^|]+)\|\|/g, '<span class="spoiler" onclick="this.classList.toggle(\'revealed\')">$1</span>');
     text = text.replace(/\[\[([^\]]+)\]\]/g, '<kbd>$1</kbd>');
-    text = text.replace(/\$([^$\n]+)\$/g, '<span class="math-inline">$1</span>');
+    text = text.replace(/\$([^$\n]+)\$/g, '<span class="math-inline">\\($1\\)</span>');
     text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
 
     const emojis = {
@@ -47,6 +47,8 @@ function parseInline(text) {
         ':sparkles:': '✨', ':bug:': '🐛', ':tada:': '🎉', ':memo:': '📝',
         ':zap:': '⚡', ':hammer:': '🔨', ':art:': '🎨', ':bulb:': '💡'
     };
+
+
     text = text.replace(/:[a-z_]+:/g, match => emojis[match] || match);
 
     return text;
@@ -58,7 +60,7 @@ function parseMarkdown(md) {
     md = md.replace(/\$\$([\s\S]*?)\$\$/g, function(match, math) {
         let id = placeholders.length;
         let safeMath = escapeHtml(math.trim());
-        placeholders.push(`<div class="math-block">${safeMath}</div>`);
+        placeholders.push(`<div class="math-block">$$${safeMath}$$</div>`);
         return `__BLOCK_${id}__`;
     });
 
@@ -306,11 +308,40 @@ if (btnUnsavedSave) {
     });
 }
 
-editor.addEventListener('input', () => {
-    clearTimeout(undoTimeout);
-    undoTimeout = setTimeout(saveState, 500);
+editor.addEventListener('keydown', (e) => {
+    // If about to delete a chunk of selected text, save state
+    if ((e.key === 'Backspace' || e.key === 'Delete') && editor.selectionStart !== editor.selectionEnd) {
+        saveState();
+    }
+});
+
+editor.addEventListener('beforeinput', (e) => {
+    if (e.inputType === 'insertFromPaste' || e.inputType === 'deleteByCut') {
+        saveState();
+    }
+});
+
+editor.addEventListener('input', (e) => {
     const text = editor.value;
     preview.innerHTML = parseMarkdown(text);
+    
+    // Trigger MathJax typesetting asynchronously if available
+    if (window.MathJax && window.MathJax.typesetPromise) {
+        window.MathJax.typesetPromise([preview]).catch((err) => console.log('MathJax error:', err));
+    }
+
+    if (isUndoRedoAction) return;
+
+    if (e.inputType === 'insertFromPaste' || e.inputType === 'deleteByCut') {
+        saveState();
+    } else if (e.inputType === 'insertText' && (e.data === ' ' || e.data === '\n' || /[.,;:!?]/.test(e.data))) {
+        saveState();
+    } else if (e.inputType === 'deleteContentBackward' || e.inputType === 'deleteContentForward') {
+        if (lastInputType === 'insertText') saveState();
+    } else if (e.inputType === 'insertText') {
+        if (lastInputType && lastInputType.startsWith('delete')) saveState();
+    }
+    lastInputType = e.inputType;
     
     // Asynchronously load local images for preview
     const images = preview.querySelectorAll('img');
@@ -435,10 +466,89 @@ document.getElementById('btn-save').addEventListener('click', async () => {
     }
 });
 
+document.getElementById('btn-export-dropdown').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const menu = document.getElementById('export-menu');
+    menu.classList.toggle('hidden');
+});
+
+document.addEventListener('click', () => {
+    const menu = document.getElementById('export-menu');
+    if (!menu.classList.contains('hidden')) {
+        menu.classList.add('hidden');
+    }
+});
+
+document.getElementById('btn-export-pdf').addEventListener('click', async () => {
+    if (window.pywebview && window.pywebview.api) {
+        const html = document.getElementById('preview').innerHTML;
+        const result = await window.pywebview.api.export_pdf(html);
+        if (result.success) {
+            alert("Successfully exported to PDF: " + result.path);
+        } else if (result.error !== "Canceled") {
+            alert("Export failed: " + result.error);
+        }
+    } else {
+        alert("PyWebView API not available.");
+    }
+});
+
+document.getElementById('btn-export-docx').addEventListener('click', async () => {
+    if (window.pywebview && window.pywebview.api) {
+        const result = await window.pywebview.api.export_docx(editor.value);
+        if (result.success) {
+            alert("Successfully exported to DOCX: " + result.path);
+        } else if (result.error !== "Canceled") {
+            alert("Export failed: " + result.error);
+        }
+    } else {
+        alert("PyWebView API not available.");
+    }
+});
+
+document.getElementById('btn-export-excel').addEventListener('click', async () => {
+    if (window.pywebview && window.pywebview.api) {
+        const html = document.getElementById('preview').innerHTML;
+        const result = await window.pywebview.api.export_excel(html);
+        if (result.success) {
+            alert("Successfully exported to Excel: " + result.path);
+        } else if (result.error !== "Canceled") {
+            alert("Export failed: " + result.error);
+        }
+    } else {
+        alert("PyWebView API not available.");
+    }
+});
+
+const btnExportIpynb = document.getElementById('btn-export-ipynb');
+if (btnExportIpynb) {
+    btnExportIpynb.addEventListener('click', async () => {
+        if (window.pywebview && window.pywebview.api) {
+            const markdown = editor.value;
+            const result = await window.pywebview.api.export_ipynb(markdown);
+            if (result.success) {
+                alert("Successfully exported to Jupyter Notebook: " + result.path);
+            } else if (result.error !== "Canceled") {
+                alert("Export failed: " + result.error);
+            }
+        } else {
+            alert("PyWebView API not available.");
+        }
+    });
+}
+
 let undoStack = [];
 let redoStack = [];
 let isUndoRedoAction = false;
-let undoTimeout;
+const MAX_HISTORY = 10;
+let lastInputType = null;
+
+// Initialize undo stack with the starting state
+undoStack.push({
+    value: editor.value,
+    selectionStart: editor.selectionStart,
+    selectionEnd: editor.selectionEnd
+});
 
 function saveState() {
     if (isUndoRedoAction) return;
@@ -449,34 +559,48 @@ function saveState() {
     };
     if (undoStack.length === 0 || undoStack[undoStack.length - 1].value !== currentState.value) {
         undoStack.push(currentState);
-        if (undoStack.length > 100) undoStack.shift();
+        if (undoStack.length > MAX_HISTORY + 1) { // +1 for the initial state
+            undoStack.shift();
+        }
         redoStack = []; 
     }
 }
 
 function doUndo() {
+    saveState();
     if (undoStack.length > 1) {
         isUndoRedoAction = true;
-        redoStack.push(undoStack.pop());
-        const state = undoStack[undoStack.length - 1];
-        editor.value = state.value;
-        editor.setSelectionRange(state.selectionStart, state.selectionEnd);
-        editor.dispatchEvent(new Event('input'));
-        isUndoRedoAction = false;
-        editor.focus();
+        try {
+            redoStack.push(undoStack.pop());
+            const state = undoStack[undoStack.length - 1];
+            editor.value = state.value;
+            editor.setSelectionRange(state.selectionStart || 0, state.selectionEnd || 0);
+            editor.dispatchEvent(new Event('input'));
+        } catch (e) {
+            console.error('Error during undo', e);
+        } finally {
+            isUndoRedoAction = false;
+            editor.focus();
+        }
     }
 }
 
 function doRedo() {
+    saveState();
     if (redoStack.length > 0) {
         isUndoRedoAction = true;
-        const state = redoStack.pop();
-        undoStack.push(state);
-        editor.value = state.value;
-        editor.setSelectionRange(state.selectionStart, state.selectionEnd);
-        editor.dispatchEvent(new Event('input'));
-        isUndoRedoAction = false;
-        editor.focus();
+        try {
+            const state = redoStack.pop();
+            undoStack.push(state);
+            editor.value = state.value;
+            editor.setSelectionRange(state.selectionStart || 0, state.selectionEnd || 0);
+            editor.dispatchEvent(new Event('input'));
+        } catch (e) {
+            console.error('Error during redo', e);
+        } finally {
+            isUndoRedoAction = false;
+            editor.focus();
+        }
     }
 }
 
@@ -649,6 +773,35 @@ function htmlNodeToMarkdown(node) {
 }
 
 editor.addEventListener('paste', (e) => {
+    const items = e.clipboardData.items || [];
+    let imagePasted = false;
+    for (let i = 0; i < items.length; i++) {
+        if (items[i] && items[i].type && items[i].type.startsWith('image/')) {
+            e.preventDefault();
+            const file = items[i].getAsFile();
+            handleImageUpload(file);
+            imagePasted = true;
+            break;
+        }
+    }
+    if (imagePasted) return;
+
+    const textData = e.clipboardData.getData('text') || e.clipboardData.getData('text/plain');
+    if (textData) {
+        const isUrl = /^https?:\/\/[^\s<]+$/.test(textData.trim());
+        if (isUrl && editor.selectionStart !== editor.selectionEnd) {
+            e.preventDefault();
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            const selectedText = editor.value.substring(start, end);
+            const replacement = `[${selectedText}](${textData.trim()})`;
+            editor.setRangeText(replacement, start, end, 'end');
+            editor.dispatchEvent(new Event('input'));
+            saveState();
+            return;
+        }
+    }
+
     const htmlData = e.clipboardData.getData('text/html');
     if (htmlData) {
         e.preventDefault();
@@ -660,6 +813,65 @@ editor.addEventListener('paste', (e) => {
         editor.dispatchEvent(new Event('input'));
     }
 });
+
+window.addEventListener('dragover', e => e.preventDefault());
+window.addEventListener('drop', e => e.preventDefault());
+
+editor.addEventListener('dragover', (e) => {
+    e.preventDefault();
+});
+
+editor.addEventListener('dragenter', (e) => {
+    e.preventDefault();
+});
+
+editor.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        for (let i = 0; i < e.dataTransfer.files.length; i++) {
+            const file = e.dataTransfer.files[i];
+            if (file.type.startsWith('image/')) {
+                handleImageUpload(file);
+            }
+        }
+    }
+});
+
+function handleImageUpload(file) {
+    const placeholder = `![Uploading ${file.name || 'image.png'}...]()`;
+    const start = editor.selectionStart;
+    editor.setRangeText(placeholder, start, editor.selectionEnd, 'end');
+    editor.dispatchEvent(new Event('input'));
+    
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const b64 = e.target.result;
+        if (window.pywebview && window.pywebview.api && window.pywebview.api.save_dropped_image) {
+            try {
+                const result = await window.pywebview.api.save_dropped_image(b64, file.name || 'pasted_image.png', currentFilePath);
+                if (result && result.success) {
+                    editor.value = editor.value.replace(placeholder, `![${file.name || 'image'}](${result.path})`);
+                    editor.dispatchEvent(new Event('input'));
+                    saveState();
+                } else {
+                    alert("Failed to save image: " + (result ? result.error : "Unknown error"));
+                    editor.value = editor.value.replace(placeholder, '');
+                    editor.dispatchEvent(new Event('input'));
+                }
+            } catch (err) {
+                console.error(err);
+                editor.value = editor.value.replace(placeholder, `![${file.name || 'image'}](${b64})`);
+                editor.dispatchEvent(new Event('input'));
+                saveState();
+            }
+        } else {
+            editor.value = editor.value.replace(placeholder, `![${file.name || 'image'}](${b64})`);
+            editor.dispatchEvent(new Event('input'));
+            saveState();
+        }
+    };
+    reader.readAsDataURL(file);
+}
 
 // --- AI Integration Logic ---
 const aiSidebar = document.getElementById('ai-sidebar');

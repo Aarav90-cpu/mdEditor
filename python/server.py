@@ -102,11 +102,12 @@ class Api:
 
     def open_file(self):
         file_types = (
-            'Supported Files (*.md;*.docx;*.xlsx;*.txt;*.png;*.jpg;*.jpeg;*.gif;*.webp)',
+            'Supported Files (*.md;*.docx;*.xlsx;*.ipynb;*.txt;*.png;*.jpg;*.jpeg;*.gif;*.webp)',
             'Markdown files (*.md)',
-            'Word Documents (*.docx)', 
-            'Excel Spreadsheets (*.xlsx)', 
-            'Text Files (*.txt)', 
+            'Jupyter Notebooks (*.ipynb)',
+            'Word Documents (*.docx)',
+            'Excel Spreadsheets (*.xlsx)',
+            'Text Files (*.txt)',
             'Image Files (*.png;*.jpg;*.jpeg;*.gif;*.webp)',
             'All files (*.*)'
         )
@@ -125,6 +126,25 @@ class Api:
                 content = self.extract_docx(filepath)
             elif ext == '.xlsx':
                 content = self.extract_xlsx(filepath)
+            elif ext == '.ipynb':
+                try:
+                    import json
+                    with open(filepath, 'r', encoding='utf-8') as f:
+                        nb = json.load(f)
+                    md_lines = []
+                    for cell in nb.get('cells', []):
+                        source = "".join(cell.get('source', []))
+                        if cell.get('cell_type') == 'markdown':
+                            md_lines.append(source)
+                        elif cell.get('cell_type') == 'code':
+                            # Detect language if possible, else default to python
+                            lang = 'python'
+                            if 'metadata' in cell and 'language' in cell['metadata']:
+                                lang = cell['metadata']['language']
+                            md_lines.append(f"```{lang}\n{source}\n```")
+                    content = "\n\n".join(md_lines)
+                except Exception as e:
+                    return {"type": "error", "error": f"Failed to parse ipynb: {str(e)}"}
             else:
                 with open(filepath, 'r', encoding='utf-8') as f:
                     content = f.read()
@@ -240,6 +260,175 @@ class Api:
             "filename": os.path.basename(current_path)
         }
 
+    def save_dropped_image(self, b64_data, filename, current_md_path):
+        import os
+        import base64
+        try:
+            if not current_md_path:
+                save_dir = os.path.join(os.getcwd(), 'images')
+            else:
+                save_dir = os.path.join(os.path.dirname(current_md_path), 'images')
+            
+            if not os.path.exists(save_dir):
+                os.makedirs(save_dir)
+            
+            base, ext = os.path.splitext(filename)
+            counter = 1
+            final_path = os.path.join(save_dir, filename)
+            while os.path.exists(final_path):
+                final_path = os.path.join(save_dir, f"{base}_{counter}{ext}")
+                counter += 1
+                
+            header, encoded = b64_data.split(",", 1)
+            with open(final_path, "wb") as fh:
+                fh.write(base64.b64decode(encoded))
+                
+            return {
+                "success": True,
+                "path": final_path
+            }
+        except Exception as e:
+            return {"success": False, "error": str(e)}
+
+    def export_pdf(self, html_text):
+        file_types = ('PDF Document (*.pdf)', 'All files (*.*)')
+        result = self.window.create_file_dialog(webview.FileDialog.SAVE, allow_multiple=False, file_types=file_types, save_filename='Export.pdf')
+        if result and len(result) > 0:
+            target_path = result[0]
+            try:
+                from xhtml2pdf import pisa
+                # Basic CSS to make the PDF look decent
+                css = """
+                <style>
+                    body { font-family: Helvetica, Arial, sans-serif; font-size: 12pt; line-height: 1.5; color: #333; }
+                    h1, h2, h3 { color: #111; }
+                    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+                    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+                    th { background-color: #f2f2f2; }
+                    pre { background-color: #f8f8f8; padding: 10px; border: 1px solid #ddd; white-space: pre-wrap; }
+                    code { font-family: Courier, monospace; background-color: #f8f8f8; padding: 2px 4px; border-radius: 4px; }
+                    img { max-width: 100%; }
+                    blockquote { border-left: 4px solid #ddd; padding-left: 10px; color: #666; font-style: italic; }
+                </style>
+                """
+                full_html = f"<html><head>{css}</head><body>{html_text}</body></html>"
+                
+                with open(target_path, "w+b") as result_file:
+                    pisa_status = pisa.CreatePDF(full_html, dest=result_file)
+                
+                if pisa_status.err:
+                    return {"success": False, "error": "PDF generation encountered errors."}
+                return {"success": True, "path": target_path}
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                return {"success": False, "error": str(e)}
+        return {"success": False, "error": "Canceled"}
+
+    def export_docx(self, markdown_text):
+        file_types = ('Word Document (*.docx)', 'All files (*.*)')
+        result = self.window.create_file_dialog(webview.FileDialog.SAVE, allow_multiple=False, file_types=file_types, save_filename='Export.docx')
+        if result and len(result) > 0:
+            target_path = result[0]
+            try:
+                from Markdown2docx import Markdown2docx
+                # Markdown2docx appends .docx to the project name, so we must remove the extension
+                project_name = target_path
+                if project_name.lower().endswith('.docx'):
+                    project_name = project_name[:-5]
+                
+                # Markdown2docx expects markdown as a list of strings if provided directly
+                project = Markdown2docx(project_name, markdown=[markdown_text])
+                project.eat_soup()
+                project.save()
+                return {"success": True, "path": target_path}
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                return {"success": False, "error": str(e)}
+        return {"success": False, "error": "Canceled"}
+
+    def export_excel(self, html_text):
+        file_types = ('Excel Spreadsheet (*.xlsx)', 'All files (*.*)')
+        result = self.window.create_file_dialog(webview.FileDialog.SAVE, allow_multiple=False, file_types=file_types, save_filename='Export.xlsx')
+        if result and len(result) > 0:
+            target_path = result[0]
+            try:
+                import pandas as pd
+                tables = pd.read_html(html_text)
+                if not tables:
+                    return {"success": False, "error": "No tables found in document."}
+                with pd.ExcelWriter(target_path, engine='openpyxl') as writer:
+                    for i, table in enumerate(tables):
+                        table.to_excel(writer, sheet_name=f'Table_{i+1}', index=False)
+                return {"success": True, "path": target_path}
+            except Exception as e:
+                return {"success": False, "error": str(e)}
+        return {"success": False, "error": "Canceled"}
+
+    def export_ipynb(self, markdown_text):
+        file_types = ('Jupyter Notebook (*.ipynb)', 'All files (*.*)')
+        result = self.window.create_file_dialog(webview.FileDialog.SAVE, allow_multiple=False, file_types=file_types, save_filename='Export.ipynb')
+        if result and len(result) > 0:
+            target_path = result[0]
+            try:
+                import re
+                import json
+                cells = []
+                # Split by ``` language ... ```
+                parts = re.split(r'(```[a-zA-Z0-9]*\n.*?\n```)', markdown_text, flags=re.DOTALL)
+                
+                for part in parts:
+                    part = part.strip()
+                    if not part:
+                        continue
+                    if part.startswith('```'):
+                        # Code block
+                        lines = part.split('\n')
+                        lang = lines[0][3:].strip()
+                        code = '\n'.join(lines[1:-1])
+                        # If language matches typically code block, default to python code cell
+                        if lang in ['python', 'py', 'r', 'julia', '']:
+                            cells.append({
+                                "cell_type": "code",
+                                "execution_count": None,
+                                "metadata": {},
+                                "outputs": [],
+                                "source": [line + "\n" for line in code.split('\n')[:-1]] + [code.split('\n')[-1]] if code else []
+                            })
+                        else:
+                            # If it's a bash/json/etc block, we can just keep it as markdown cell for jupyter
+                            cells.append({
+                                "cell_type": "markdown",
+                                "metadata": {},
+                                "source": [line + "\n" for line in part.split('\n')[:-1]] + [part.split('\n')[-1]]
+                            })
+                    else:
+                        # Markdown block
+                        cells.append({
+                            "cell_type": "markdown",
+                            "metadata": {},
+                            "source": [line + "\n" for line in part.split('\n')[:-1]] + [part.split('\n')[-1]]
+                        })
+                        
+                nb = {
+                    "cells": cells,
+                    "metadata": {},
+                    "nbformat": 4,
+                    "nbformat_minor": 4
+                }
+                
+                with open(target_path, "w", encoding="utf-8") as f:
+                    json.dump(nb, f, indent=1)
+                    
+                return {"success": True, "path": target_path}
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
+                return {"success": False, "error": str(e)}
+        return {"success": False, "error": "Canceled"}
+
+
 if __name__ == '__main__':
     api = Api()
     html_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'index.html')
@@ -263,5 +452,5 @@ if __name__ == '__main__':
         return True
         
     window.events.closing += on_closing
-    
-    webview.start(private_mode=False)
+
+    webview.start(private_mode=False, gui='qt')

@@ -5,12 +5,25 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>mdEditor</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=3">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link
         href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
         rel="stylesheet" />
     <script type="module" src="https://esm.sh/@material/web/all.js?bundle&target=es2020"></script>
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            startup: {
+                typeset: false
+            }
+        };
+    </script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 
 <body>
@@ -19,13 +32,26 @@
         <div class="file-ops">
             <md-filled-button id="btn-new">New File</md-filled-button>
             <md-outlined-button id="btn-open">Open / Import</md-outlined-button>
-            <md-outlined-button id="btn-save">Save</md-outlined-button>
-            <md-icon-button id="btn-lock" title="Lock File" style="margin-left: 5px;"><md-icon>lock_open</md-icon></md-icon-button>
+            <div class="split-button-container">
+                <button id="btn-save" class="split-btn-left">Save</button>
+                <div class="split-divider-wrapper">
+                    <div class="split-divider"></div>
+                </div>
+                <button id="btn-export-dropdown" class="split-btn-right"><md-icon>arrow_drop_down</md-icon></button>
+                <div id="export-menu" class="export-dropdown hidden">
+                    <div class="export-item" id="btn-export-pdf"><md-icon>picture_as_pdf</md-icon> Export as PDF</div>
+                    <div class="export-item" id="btn-export-docx"><md-icon>description</md-icon> Export as DOCX</div>
+                    <div class="export-item" id="btn-export-excel"><md-icon>table_view</md-icon> Export as Excel</div>
+                    <div class="export-item" id="btn-export-ipynb"><md-icon>book</md-icon> Export as .ipynb</div>
+                </div>
+            </div>
+            <md-icon-button id="btn-lock" title="Lock File"
+                style="margin-left: 5px;"><md-icon>lock_open</md-icon></md-icon-button>
             <md-filled-button id="btn-ai-toggle" style="--md-sys-color-primary: var(--accent); margin-left: 5px;">AI
                 Chat</md-filled-button>
             <md-icon-button id="btn-settings" title="Settings"
                 style="margin-left: 5px;"><md-icon>settings</md-icon></md-icon-button>
-            <span id="current-file">Untitled.md</span>
+            <span id="current-file" style="margin-left: 10px;">Untitled.md</span>
         </div>
     </div>
     </div>
@@ -92,7 +118,8 @@
                         <option value="">Loading models...</option>
                     </select>
                     <div style="flex:1"></div>
-                    <md-icon-button id="btn-ask-ai" style="background: var(--accent); color: var(--bg-color); border-radius: 50%; width: 32px; height: 32px; --md-icon-button-icon-size: 18px;"><md-icon>arrow_upward</md-icon></md-icon-button>
+                    <md-icon-button id="btn-ask-ai"
+                        style="background: var(--accent); color: var(--bg-color); border-radius: 50%; width: 32px; height: 32px; --md-icon-button-icon-size: 18px;"><md-icon>arrow_upward</md-icon></md-icon-button>
                 </div>
             </div>
         </div>
@@ -116,9 +143,11 @@
                 <span style="color: var(--text-color);">Document Zoom</span>
                 <div class="zoom-ops"
                     style="display: flex; align-items: center; gap: 8px; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: var(--md-sys-shape-corner-small); padding: 2px 8px;">
-                    <md-icon-button id="btn-zoom-out" title="Decrease Document Font Size"><md-icon>remove</md-icon></md-icon-button>
+                    <md-icon-button id="btn-zoom-out"
+                        title="Decrease Document Font Size"><md-icon>remove</md-icon></md-icon-button>
                     <span id="zoom-level" style="min-width: 40px; text-align: center;">100%</span>
-                    <md-icon-button id="btn-zoom-in" title="Increase Document Font Size"><md-icon>add</md-icon></md-icon-button>
+                    <md-icon-button id="btn-zoom-in"
+                        title="Increase Document Font Size"><md-icon>add</md-icon></md-icon-button>
                 </div>
             </div>
 
@@ -161,8 +190,10 @@
     <div id="password-dialog" class="modal hidden">
         <div class="modal-content" style="max-width: 400px;">
             <h3 id="password-title" style="margin-top: 0;">Enter Password</h3>
-            <p id="password-msg" style="color: var(--text-color); opacity: 0.8; margin-bottom: 20px;">Please enter the password for this file.</p>
-            <md-outlined-text-field id="input-password" type="password" placeholder="Password" style="width: 100%;"></md-outlined-text-field>
+            <p id="password-msg" style="color: var(--text-color); opacity: 0.8; margin-bottom: 20px;">Please enter the
+                password for this file.</p>
+            <md-outlined-text-field id="input-password" type="password" placeholder="Password"
+                style="width: 100%;"></md-outlined-text-field>
             <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
                 <md-text-button id="btn-password-cancel">Cancel</md-text-button>
                 <md-filled-button id="btn-password-submit">Submit</md-filled-button>
@@ -173,11 +204,20 @@
     <!-- Shortcuts Modal -->
     <div id="shortcuts-dialog" class="modal hidden">
         <div class="modal-content" style="max-width: 500px;">
-            <h3 style="margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Keyboard Shortcuts</h3>
+            <h3 style="margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">Keyboard
+                Shortcuts</h3>
             <table style="width: 100%; color: var(--text-color); border-collapse: collapse;">
                 <tr style="border-bottom: 1px solid var(--border-color);">
                     <td style="padding: 8px 0; font-weight: bold;">Action</td>
                     <td style="padding: 8px 0; font-weight: bold; text-align: right;">Shortcut</td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color); opacity: 0.8;">
+                    <td style="padding: 8px 0;">Undo</td>
+                    <td style="padding: 8px 0; text-align: right;"><kbd>Ctrl + Z</kbd></td>
+                </tr>
+                <tr style="border-bottom: 1px solid var(--border-color); opacity: 0.8;">
+                    <td style="padding: 8px 0;">Redo</td>
+                    <td style="padding: 8px 0; text-align: right;"><kbd>Ctrl + Y</kbd></td>
                 </tr>
                 <tr style="border-bottom: 1px solid var(--border-color); opacity: 0.8;">
                     <td style="padding: 8px 0;">Bold Text</td>
@@ -210,7 +250,7 @@
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=3"></script>
 </body>
 
 </html>
